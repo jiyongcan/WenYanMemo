@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">文言文记忆</string>
+
+    <string-array name="pos_options">
+        <item>n.</item>
+        <item>v.</item>
+        <item>adj.</item>
+        <item>adv.</item>
+        <item>prep.</item>
+        <item>pron.</item>
+        <item>conj.</item>
+        <item>interj.</item>
+        <item>num.</item>
+        <item>aux.</item>
+        <item>其他</item>
+    </string-array>
+</resources>
