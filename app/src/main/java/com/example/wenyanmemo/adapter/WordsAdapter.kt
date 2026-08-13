@@ -109,7 +109,7 @@ class WordsAdapter(
         }
 
         val isEdit = meaning != null
-        if (isEdit) {
+        if (meaning != null) {
             val idx = posOptions.indexOf(meaning.pos)
             spPos.setSelection(if (idx >= 0) idx else 0)
             etDef.setText(meaning.definition)

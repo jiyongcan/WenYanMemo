@@ -146,8 +146,8 @@ object DocxExporter {
 
     private fun escape(s: String): String = s
         .replace("&", "&amp;")
-        .replace("<", "<")
-        .replace(">", ">")
-        .replace("\"", """)
-        .replace("'", "'")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace("\"", "&quot;")
+        .replace("'", "&apos;")
 }
