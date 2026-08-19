@@ -37,9 +37,10 @@
             android:id="@+id/etDef"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="请输入释义内容"
-            android:inputType="textMultiLine"
-            android:minLines="2"
+            android:hint="请输入释义内容，按回车键保存"
+            android:imeOptions="actionDone"
+            android:inputType="text"
+            android:maxLines="1"
             android:padding="8dp" />
 
         <TextView

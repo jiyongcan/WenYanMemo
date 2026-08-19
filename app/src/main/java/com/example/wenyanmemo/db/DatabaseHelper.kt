@@ -7,6 +7,8 @@ import android.database.sqlite.SQLiteOpenHelper
 import com.example.wenyanmemo.model.MeaningItem
 import com.example.wenyanmemo.model.WordItem
 import com.example.wenyanmemo.model.WordWithMeanings
+import java.text.Collator
+import java.util.Locale
 
 /**
  * SQLite 存储：
@@ -109,7 +111,9 @@ class DatabaseHelper private constructor(context: Context) :
                 result.add(WordWithMeanings(word, queryMeanings(db, word.id)))
             }
         }
-        return result
+        // 按拼音首字母排序（中英文统一）
+        val collator = Collator.getInstance(Locale.CHINA)
+        return result.sortedWith(compareBy(collator) { it.word.term })
     }
 
     private fun queryWordId(db: SQLiteDatabase, word: String): Long {

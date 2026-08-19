@@ -7,12 +7,9 @@
         <item>v.</item>
         <item>adj.</item>
         <item>adv.</item>
+        <item>conj.</item>
         <item>prep.</item>
         <item>pron.</item>
-        <item>conj.</item>
-        <item>interj.</item>
-        <item>num.</item>
-        <item>aux.</item>
         <item>其他</item>
     </string-array>
 </resources>
