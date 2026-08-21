@@ -1,7 +1,11 @@
 package com.example.wenyanmemo
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import com.example.wenyanmemo.databinding.ActivityMainBinding
 import com.example.wenyanmemo.ui.InputFragment
@@ -19,6 +23,15 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        // Android 9 及以下：请求存储权限，用于数据库自动备份到「下载」
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q &&
+            ContextCompat.checkSelfPermission(
+                this, Manifest.permission.WRITE_EXTERNAL_STORAGE
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            requestPermissions(arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), 2001)
+        }
 
         supportFragmentManager.beginTransaction()
             .add(R.id.fragmentContainer, reviewFragment, "review").hide(reviewFragment)

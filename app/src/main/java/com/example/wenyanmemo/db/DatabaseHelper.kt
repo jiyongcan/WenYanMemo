@@ -1,14 +1,22 @@
 package com.example.wenyanmemo.db
 
+import android.Manifest
 import android.content.ContentValues
 import android.content.Context
+import android.content.pm.PackageManager
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
+import androidx.core.content.ContextCompat
 import com.example.wenyanmemo.model.MeaningItem
 import com.example.wenyanmemo.model.WordItem
 import com.example.wenyanmemo.model.WordWithMeanings
+import java.io.File
 import java.text.Collator
 import java.util.Locale
+import java.util.concurrent.Executors
 
 /**
  * SQLite 存储：
@@ -16,6 +24,9 @@ import java.util.Locale
  */
 class DatabaseHelper private constructor(context: Context) :
     SQLiteOpenHelper(context, DB_NAME, null, DB_VERSION) {
+
+    private val appContext: Context = context.applicationContext
+    private val backupExecutor = Executors.newSingleThreadExecutor()
 
     companion object {
         private const val DB_NAME = "wenyen_dict.db"
@@ -73,6 +84,7 @@ class DatabaseHelper private constructor(context: Context) :
         } finally {
             db.endTransaction()
         }
+        autoBackup()
     }
 
     /** 修改释义 */
@@ -81,16 +93,83 @@ class DatabaseHelper private constructor(context: Context) :
             put("pos", pos)
             put("definition", definition)
         }, "id = ?", arrayOf(id.toString()))
+        autoBackup()
     }
 
     /** 删除单条释义 */
     fun deleteMeaning(id: Long) {
         writableDatabase.delete("meanings", "id = ?", arrayOf(id.toString()))
+        autoBackup()
     }
 
     /** 删除整个字词（级联删除其释义） */
     fun deleteWord(wordId: Long) {
         writableDatabase.delete("words", "id = ?", arrayOf(wordId.toString()))
+        autoBackup()
+    }
+
+    // ===== 自动备份：每次数据变更后，把数据库复制到「下载/文言文记忆备份」 =====
+
+    private fun autoBackup() {
+        backupExecutor.execute {
+            try {
+                backupToDownloads()
+            } catch (e: Exception) {
+                // 备份失败不影响主流程
+            }
+        }
+    }
+
+    private fun backupToDownloads() {
+        // Android 9 及以下需要存储权限，未授权时跳过
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q &&
+            ContextCompat.checkSelfPermission(
+                appContext, Manifest.permission.WRITE_EXTERNAL_STORAGE
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
+        val src = File(appContext.getDatabasePath(DB_NAME).path)
+        if (!src.exists()) return
+        val dirName = "文言文记忆备份"
+        val fileName = "wenyen_dict.db"
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val resolver = appContext.contentResolver
+            val relPath = Environment.DIRECTORY_DOWNLOADS + "/" + dirName
+            // 先删除旧备份，保持单一备份文件
+            resolver.delete(
+                MediaStore.Downloads.EXTERNAL_CONTENT_URI,
+                "${MediaStore.MediaColumns.DISPLAY_NAME} = ? AND ${MediaStore.MediaColumns.RELATIVE_PATH} = ?",
+                arrayOf(fileName, relPath)
+            )
+            val values = ContentValues().apply {
+                put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+                put(MediaStore.MediaColumns.MIME_TYPE, "application/octet-stream")
+                put(MediaStore.MediaColumns.RELATIVE_PATH, relPath)
+                put(MediaStore.MediaColumns.IS_PENDING, 1)
+            }
+            val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values) ?: return
+            try {
+                resolver.openOutputStream(uri)?.use { os ->
+                    src.inputStream().use { ins -> ins.copyTo(os) }
+                }
+                values.clear()
+                values.put(MediaStore.MediaColumns.IS_PENDING, 0)
+                resolver.update(uri, values, null, null)
+            } catch (e: Exception) {
+                resolver.delete(uri, null, null)
+            }
+        } else {
+            @Suppress("DEPRECATION")
+            val dir = File(
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+                dirName
+            )
+            if (!dir.exists()) dir.mkdirs()
+            val dest = File(dir, fileName)
+            src.copyTo(dest, overwrite = true)
+        }
     }
 
     /** 按字词或释义搜索；空串返回全部 */
